@@ -1,0 +1,29 @@
+[global]
+exclude = [".git", ".github", "vendor", "dist", "CHANGELOG.md", "LICENSE.md"]
+respect-gitignore = true
+
+disable = [
+  "MD014", # Dollar signs before commands
+  "MD033", # Inline HTML
+]
+
+[MD013]
+line-length = 0
+reflow = true
+reflow-mode = "normalize"
+
+# Consistent heading style
+[MD003]
+style = "consistent"
+
+# Consistent list style
+[MD004]
+style = "consistent"
+
+# Consistent emphasis style
+[MD049]
+style = "consistent"
+
+# Consistent strong style
+[MD050]
+style = "consistent"

@@ -1,0 +1,30 @@
+[tools]
+gitleaks = "8.30.1"
+go = "1.27.1"
+golangci-lint = "2.14.0"
+gotestsum = "1.13.0"
+hk = "2.3.1"
+jq = "1.8.2"
+rumdl = "0.2.77"
+taplo = "0.10.0"
+typos = "1.50.3"
+yamlfmt = "0.21.0"
+yamllint = "1.38.0"
+
+[tasks.check]
+description = "Verify formatting, lint, config, module tidiness and applicable tests without changing source files"
+run = "hk check --all --check --no-stage"
+
+[tasks.fix]
+description = "Apply formatting and available lint/module fixes, then run remaining checks; do not stage files"
+run = "hk fix --all --fix --no-stage"
+
+[tasks.test]
+description = "Run all Go tests with the race detector"
+run = "gotestsum -- -race ./..."
+
+[env]
+HK_MISE = 1
+
+[hooks]
+postinstall = "hk install --mise"
