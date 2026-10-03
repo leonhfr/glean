@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 )
 
 func manifestFields(data []byte) (map[string]json.RawMessage, error) {
@@ -60,5 +61,67 @@ func readObjectField(decoder *json.Decoder, fields map[string]json.RawMessage, i
 	}
 
 	fields[key] = value
+	return nil
+}
+
+func equivalentJSONFields(first, second map[string]json.RawMessage, invalidErr error) (bool, error) {
+	// Compare JSON values without expanding references, inferring defaults or merging.
+	a, err := canonicalJSONFields(first, invalidErr)
+	if err != nil {
+		return false, err
+	}
+
+	b, err := canonicalJSONFields(second, invalidErr)
+	if err != nil {
+		return false, err
+	}
+
+	return string(a) == string(b), nil
+}
+
+func canonicalJSONFields(fields map[string]json.RawMessage, invalidErr error) ([]byte, error) {
+	raw, err := json.Marshal(fields)
+	if err != nil {
+		return nil, fmt.Errorf("%w: encode JSON definition: %w", invalidErr, err)
+	}
+
+	decoder := json.NewDecoder(strings.NewReader(string(raw)))
+	decoder.UseNumber()
+	var value any
+	if err := decoder.Decode(&value); err != nil {
+		return nil, fmt.Errorf("%w: decode JSON definition: %w", invalidErr, err)
+	}
+
+	normalized, err := json.Marshal(value)
+	if err != nil {
+		return nil, fmt.Errorf("%w: normalize JSON definition: %w", invalidErr, err)
+	}
+
+	return normalized, nil
+}
+
+func validateJSONObjects(raw json.RawMessage, invalidErr error) error {
+	var values []json.RawMessage
+	if len(raw) > 0 && raw[0] == '{' {
+		fields, err := objectFields(raw, invalidErr)
+		if err != nil {
+			return err
+		}
+
+		for _, value := range fields {
+			values = append(values, value)
+		}
+	} else if len(raw) > 0 && raw[0] == '[' {
+		if err := json.Unmarshal(raw, &values); err != nil {
+			return fmt.Errorf("%w: invalid nested array", invalidErr)
+		}
+	}
+
+	for _, value := range values {
+		if err := validateJSONObjects(value, invalidErr); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

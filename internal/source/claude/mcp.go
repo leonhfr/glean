@@ -208,7 +208,7 @@ func mcpCapability(name string, raw json.RawMessage, contribution mcpContributio
 		return model.Capability{}, fmt.Errorf("%w: blank MCP server name", ErrInvalidMCP)
 	}
 
-	if err := validateMCPObjects(raw); err != nil {
+	if err := validateJSONObjects(raw, ErrInvalidMCP); err != nil {
 		return model.Capability{}, fmt.Errorf("server %q: %w", name, err)
 	}
 
@@ -253,7 +253,7 @@ func combineMCP(existing, candidate model.Capability) (model.Capability, error) 
 		return model.Capability{}, fmt.Errorf("%w: missing MCP definition", ErrInvalidMCP)
 	}
 
-	equivalent, err := equivalentMCPFields(previous.Fields, next.Fields)
+	equivalent, err := equivalentJSONFields(previous.Fields, next.Fields, ErrInvalidMCP)
 	if err != nil {
 		return model.Capability{}, err
 	}
@@ -275,66 +275,4 @@ func combineMCP(existing, candidate model.Capability) (model.Capability, error) 
 	}
 
 	return existing, nil
-}
-
-func equivalentMCPFields(first, second map[string]json.RawMessage) (bool, error) {
-	// Compare JSON values without expanding references, inferring defaults or merging.
-	a, err := canonicalMCPFields(first)
-	if err != nil {
-		return false, err
-	}
-
-	b, err := canonicalMCPFields(second)
-	if err != nil {
-		return false, err
-	}
-
-	return string(a) == string(b), nil
-}
-
-func canonicalMCPFields(fields map[string]json.RawMessage) ([]byte, error) {
-	raw, err := json.Marshal(fields)
-	if err != nil {
-		return nil, fmt.Errorf("%w: encode MCP definition: %w", ErrInvalidMCP, err)
-	}
-
-	decoder := json.NewDecoder(strings.NewReader(string(raw)))
-	decoder.UseNumber()
-	var value any
-	if err := decoder.Decode(&value); err != nil {
-		return nil, fmt.Errorf("%w: decode MCP definition: %w", ErrInvalidMCP, err)
-	}
-
-	normalized, err := json.Marshal(value)
-	if err != nil {
-		return nil, fmt.Errorf("%w: normalize MCP definition: %w", ErrInvalidMCP, err)
-	}
-
-	return normalized, nil
-}
-
-func validateMCPObjects(raw json.RawMessage) error {
-	var values []json.RawMessage
-	if len(raw) > 0 && raw[0] == '{' {
-		fields, err := objectFields(raw, ErrInvalidMCP)
-		if err != nil {
-			return err
-		}
-
-		for _, value := range fields {
-			values = append(values, value)
-		}
-	} else if len(raw) > 0 && raw[0] == '[' {
-		if err := json.Unmarshal(raw, &values); err != nil {
-			return fmt.Errorf("%w: invalid nested array", ErrInvalidMCP)
-		}
-	}
-
-	for _, value := range values {
-		if err := validateMCPObjects(value); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
