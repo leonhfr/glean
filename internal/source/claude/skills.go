@@ -69,7 +69,7 @@ func readSkills(source fs.FS, manifest Manifest, packageID model.PackageID) ([]m
 				return nil, err
 			}
 
-			capabilities, err = includeSkill(capabilities, capability)
+			capabilities, err = includeMarkdownCapability(capabilities, capability, ErrInvalidSkills)
 			if err != nil {
 				return nil, err
 			}
@@ -82,17 +82,17 @@ func readSkills(source fs.FS, manifest Manifest, packageID model.PackageID) ([]m
 	return capabilities, nil
 }
 
-func skillDirectories(source fs.FS, manifest Manifest) ([]skillDirectory, error) {
-	var directories []skillDirectory
+func skillDirectories(source fs.FS, manifest Manifest) ([]componentLocation, error) {
+	var directories []componentLocation
 	_, err := fs.Stat(source, "skills")
 	if err == nil {
-		directories = append(directories, skillDirectory{path: "skills"})
+		directories = append(directories, componentLocation{path: "skills"})
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return nil, fmt.Errorf("inspect skills directory: %w", err)
 	}
 
 	if raw, declared := manifest.Fields["skills"]; declared {
-		custom, err := declaredSkillDirectories(raw)
+		custom, err := declaredComponentPaths(raw, "skills", true, ErrInvalidSkills)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +102,7 @@ func skillDirectories(source fs.FS, manifest Manifest) ([]skillDirectory, error)
 		if exists, err := skillEntrypoint(source, "."); err != nil {
 			return nil, err
 		} else if exists {
-			directories = append(directories, skillDirectory{path: "."})
+			directories = append(directories, componentLocation{path: "."})
 		}
 	}
 
@@ -196,28 +196,4 @@ func readSkill(source fs.FS, manifest Manifest, packageID model.PackageID, direc
 		Provenance: model.Provenance{Root: manifest.Root, Declarations: locations},
 		Payload:    model.Payload{Entrypoints: []string{entrypoint}, Assets: []string{directory}},
 	}, nil
-}
-
-func includeSkill(capabilities []model.Capability, candidate model.Capability) ([]model.Capability, error) {
-	for i, existing := range capabilities {
-		if existing.ID != candidate.ID {
-			continue
-		}
-
-		if existing.Payload.Entrypoints[0] != candidate.Payload.Entrypoints[0] {
-			return nil, fmt.Errorf("%w: invocation %s is declared by both %s and %s", ErrInvalidSkills,
-				candidate.ID, existing.Payload.Entrypoints[0], candidate.Payload.Entrypoints[0])
-		}
-
-		for _, location := range candidate.Provenance.Declarations {
-			if !slices.Contains(existing.Provenance.Declarations, location) {
-				existing.Provenance.Declarations = append(existing.Provenance.Declarations, location)
-			}
-		}
-
-		capabilities[i] = existing
-		return capabilities, nil
-	}
-
-	return append(capabilities, candidate), nil
 }

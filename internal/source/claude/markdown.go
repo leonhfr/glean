@@ -9,22 +9,32 @@ import (
 	claudemodel "github.com/leonhfr/glean/internal/model/claude"
 )
 
+type markdownMetadata struct {
+	name        *string
+	description *string
+}
+
 func skillDocument(data []byte) (claudemodel.Skill, string) {
-	definition := claudemodel.Skill{Document: string(data)}
+	metadata, body := documentMetadata(data)
+	return claudemodel.Skill{Document: string(data), Name: metadata.name, Description: metadata.description}, firstContentLine(body)
+}
+
+func documentMetadata(data []byte) (markdownMetadata, []byte) {
+	var metadata markdownMetadata
 	frontmatter, body := splitFrontmatter(data)
 	var fields map[string]any
-	// Claude treats malformed YAML as having no metadata. Preserve the document.
+	// Native plugin Markdown keeps loading when YAML metadata cannot be parsed.
 	if yaml.Unmarshal(frontmatter, &fields) == nil {
 		if name, ok := fields["name"].(string); ok {
-			definition.Name = &name
+			metadata.name = &name
 		}
 
 		if description, ok := fields["description"].(string); ok {
-			definition.Description = &description
+			metadata.description = &description
 		}
 	}
 
-	return definition, firstContentLine(body)
+	return metadata, body
 }
 
 func splitFrontmatter(data []byte) ([]byte, []byte) {
