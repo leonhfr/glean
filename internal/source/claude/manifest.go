@@ -33,19 +33,9 @@ type Manifest struct {
 // the directory name; future catalog resolution can supply authoritative metadata.
 // This does not discover capabilities, validate their definitions or modify files.
 func ReadManifest(directory string) (result Manifest, err error) {
-	rootPath, err := filepath.Abs(directory)
+	root, err := openPluginRoot(directory)
 	if err != nil {
-		return Manifest{}, fmt.Errorf("resolve plugin root: %w", err)
-	}
-
-	rootPath, err = filepath.EvalSymlinks(rootPath)
-	if err != nil {
-		return Manifest{}, fmt.Errorf("resolve plugin root: %w", err)
-	}
-
-	root, err := os.OpenRoot(rootPath)
-	if err != nil {
-		return Manifest{}, fmt.Errorf("open plugin root: %w", err)
+		return Manifest{}, err
 	}
 	defer func() {
 		if closeErr := root.Close(); closeErr != nil {
@@ -54,10 +44,11 @@ func ReadManifest(directory string) (result Manifest, err error) {
 		}
 	}()
 
-	if err = validatePayload(root.FS()); err != nil {
-		return Manifest{}, err
-	}
+	return readManifest(root)
+}
 
+func readManifest(root *os.Root) (Manifest, error) {
+	rootPath := root.Name()
 	data, err := root.ReadFile(ManifestPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		name := filepath.Base(rootPath)
