@@ -17,7 +17,7 @@ type CapabilityID struct {
 	Name string
 }
 
-// ParseCapabilityID decodes the qualified CLI/JSON form for supported MVP kinds.
+// ParseCapabilityID decodes a qualified identifier for a supported kind.
 // It consumes the known kind prefix and preserves the complete remaining name.
 func ParseCapabilityID(value string) (CapabilityID, error) {
 	for _, kind := range []CapabilityKind{

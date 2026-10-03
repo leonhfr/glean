@@ -1,12 +1,10 @@
-// Package model defines shared capability inventory types independently of
-// configuration syntax, source acquisition and native harness implementations.
+// Package model defines capability inventory types.
 package model
 
 // CapabilityKind identifies shared or harness-specific capability semantics.
 type CapabilityKind string
 
-// Supported MVP capability kinds. Skills use the shared format; other kinds
-// retain Claude semantics rather than implying cross-harness equivalence.
+// Supported capability kinds.
 const (
 	KindSkill         CapabilityKind = "skill"
 	KindClaudeAgent   CapabilityKind = "claude:agent"
@@ -16,8 +14,7 @@ const (
 	KindClaudeLSP     CapabilityKind = "claude:lsp"
 )
 
-// Definition preserves a capability's typed native semantics. Implementations
-// live in definition packages; the common model does not import them.
+// Definition describes a capability's typed native semantics.
 type Definition interface {
 	Kind() CapabilityKind
 }
@@ -45,7 +42,7 @@ type Provenance struct {
 
 // Location identifies a source file and, optionally, a declaration within it.
 // Pointer is a JSON Pointer for structured declarations; an empty pointer refers
-// to the whole file. It does not contain credentials or resolved values.
+// to the whole file.
 type Location struct {
 	Path    string
 	Pointer string
@@ -53,9 +50,7 @@ type Location struct {
 
 // Payload identifies active entrypoints and their supporting files/directories.
 // All paths are package-root-relative. Directory paths include their trees.
-// Readers establish safe boundaries and reject symlinks before producing output.
-// Inline native definitions may have no filesystem entrypoints. Assets are
-// supporting content, not permission to activate unselected entrypoints.
+// Inline native definitions may have no filesystem entrypoints.
 type Payload struct {
 	Entrypoints []string
 	Assets      []string

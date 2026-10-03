@@ -1,4 +1,4 @@
-// Package claude defines native Claude capabilities without filesystem access.
+// Package claude defines native Claude capabilities.
 package claude
 
 import "github.com/leonhfr/glean/internal/model"

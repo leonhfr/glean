@@ -37,8 +37,7 @@ func Load(path string) (*Document, error) {
 }
 
 // Parse validates and decodes one YAML document. Local paths resolve relative to
-// path; Git subpaths retain their repository-relative meaning. It performs no
-// acquisition, native inspection, credential expansion or persistent writes.
+// path; Git subpaths retain their repository-relative meaning.
 func Parse(data []byte, path string) (*Document, error) {
 	root, err := parseDocument(data)
 	if err != nil {
