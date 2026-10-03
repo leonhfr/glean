@@ -213,6 +213,7 @@ func assessCapability(capability model.Capability, plugin PluginInventory, confi
 
 func assessNativeCapability(capability model.Capability, plugin PluginInventory) []model.Finding {
 	findings := assessServerDefinition(capability)
+	findings = append(findings, assessMarkdownDefinition(capability, plugin)...)
 	switch definition := capability.Definition.(type) {
 	case native.MCP:
 		if definition.Transport == native.MCPStdio {
