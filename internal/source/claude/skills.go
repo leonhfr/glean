@@ -11,20 +11,19 @@ import (
 	"strings"
 
 	"github.com/leonhfr/glean/internal/model"
+	"github.com/leonhfr/glean/internal/system"
 )
 
 // ErrInvalidSkills identifies invalid paths or ambiguous skill invocation names.
 var ErrInvalidSkills = errors.New("invalid Claude skill source")
 
-// ReadSkills inventories only a local plugin's skills, before selection filtering.
-// PackageID comes from source resolution, not a config selection alias.
-// Other capability kinds remain uninspected; this is not a complete plugin reader.
-func ReadSkills(directory string, packageID model.PackageID) (result model.Inventory, err error) {
+// ReadSkills inventories a local plugin's skills under the supplied package ID.
+func ReadSkills(sys system.RootOpener, directory string, packageID model.PackageID) (result model.Inventory, err error) {
 	if strings.TrimSpace(string(packageID)) == "" {
 		return model.Inventory{}, fmt.Errorf("%w: require resolved package identity", ErrInvalidSkills)
 	}
 
-	root, err := openPluginRoot(directory)
+	root, err := openPluginRoot(sys, directory)
 	if err != nil {
 		return model.Inventory{}, err
 	}

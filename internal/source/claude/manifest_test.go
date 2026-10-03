@@ -2,15 +2,18 @@ package claude_test
 
 import (
 	"encoding/json"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/leonhfr/glean/internal/source/claude"
+	"github.com/leonhfr/glean/internal/system"
 )
 
 func TestReadManifestPreservesAuthoredFields(t *testing.T) {
@@ -21,7 +24,7 @@ func TestReadManifestPreservesAuthoredFields(t *testing.T) {
 	before, err := os.ReadFile(path)
 	require.NoError(t, err)
 
-	manifest, err := claude.ReadManifest(root)
+	manifest, err := claude.ReadManifest(system.Real{}, root)
 	require.NoError(t, err)
 	assert.True(t, manifest.Present)
 	assert.Equal(t, "review-tools", manifest.Name)
@@ -40,13 +43,13 @@ func TestReadManifestWithoutFile(t *testing.T) {
 	t.Parallel()
 	root := filepath.Join(t.TempDir(), "default-plugin")
 	require.NoError(t, os.Mkdir(root, 0o700))
-	manifest, err := claude.ReadManifest(root)
+	manifest, err := claude.ReadManifest(system.Real{}, root)
 	require.NoError(t, err)
 	assert.False(t, manifest.Present)
 	assert.Equal(t, "default-plugin", manifest.Name)
 	assert.Empty(t, manifest.Fields)
 
-	_, err = claude.ReadManifest(filepath.Join(root, "missing"))
+	_, err = claude.ReadManifest(system.Real{}, filepath.Join(root, "missing"))
 	require.ErrorIs(t, err, fs.ErrNotExist)
 }
 
@@ -82,7 +85,7 @@ func TestReadManifestRejectsMalformedMetadata(t *testing.T) {
 			t.Parallel()
 			root := t.TempDir()
 			writeManifest(t, root, tc.data)
-			_, err := claude.ReadManifest(root)
+			_, err := claude.ReadManifest(system.Real{}, root)
 			require.ErrorIs(t, err, claude.ErrInvalidManifest)
 		})
 	}
@@ -92,7 +95,7 @@ func TestReadManifestPreservesNativeName(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
 	writeManifest(t, root, `{"name":"Review_Tools"}`)
-	manifest, err := claude.ReadManifest(root)
+	manifest, err := claude.ReadManifest(system.Real{}, root)
 	require.NoError(t, err)
 	assert.Equal(t, "Review_Tools", manifest.Name)
 }
@@ -112,7 +115,7 @@ func TestReadManifestRejectsPayloadSymlinks(t *testing.T) {
 			}
 
 			require.NoError(t, os.Symlink(linkTarget, filepath.Join(root, "linked")))
-			_, err := claude.ReadManifest(root)
+			_, err := claude.ReadManifest(system.Real{}, root)
 			require.ErrorIs(t, err, claude.ErrUnsupportedPayload)
 			assert.ErrorContains(t, err, "linked")
 		})
@@ -125,7 +128,7 @@ func TestReadManifestRejectsLinkedManifestDirectory(t *testing.T) {
 	outside := t.TempDir()
 	writeManifest(t, outside, `{"name":"review"}`)
 	require.NoError(t, os.Symlink(filepath.Join(outside, ".claude-plugin"), filepath.Join(root, ".claude-plugin")))
-	_, err := claude.ReadManifest(root)
+	_, err := claude.ReadManifest(system.Real{}, root)
 	require.ErrorIs(t, err, claude.ErrUnsupportedPayload)
 }
 
@@ -135,13 +138,70 @@ func TestReadManifestIgnoresOnlyGitMetadata(t *testing.T) {
 	writeManifest(t, root, `{"name":"review"}`)
 	require.NoError(t, os.Mkdir(filepath.Join(root, ".git"), 0o700))
 	require.NoError(t, os.Symlink("missing", filepath.Join(root, ".git", "metadata-link")))
-	_, err := claude.ReadManifest(root)
+	_, err := claude.ReadManifest(system.Real{}, root)
 	require.NoError(t, err)
 
 	require.NoError(t, os.WriteFile(filepath.Join(root, ".gitignore"), []byte("ignored-link\n"), 0o600))
 	require.NoError(t, os.Symlink("missing", filepath.Join(root, "ignored-link")))
-	_, err = claude.ReadManifest(root)
+	_, err = claude.ReadManifest(system.Real{}, root)
 	require.ErrorIs(t, err, claude.ErrUnsupportedPayload)
+}
+
+func TestReadManifestClosesRootOnSuccess(t *testing.T) {
+	t.Parallel()
+	source := fstest.MapFS{
+		claude.ManifestPath:      {Data: []byte(`{"name":"review-tools"}`)},
+		"skills/review/SKILL.md": {Data: []byte("# Review\n")},
+	}
+	closed := 0
+	sys := &system.Fake{OpenRootHandler: func(string) (system.Root, error) {
+		return system.FakeRoot{
+			Path: "/source/review-tools", Source: source,
+			CloseHandler: func() error { closed++; return nil },
+		}, nil
+	}}
+	_, err := claude.ReadManifest(sys, "requested-path")
+	require.NoError(t, err)
+	assert.Equal(t, 1, closed)
+}
+
+func TestReadManifestClosesRejectedPayloadAndPreservesBothErrors(t *testing.T) {
+	t.Parallel()
+	closeErr := errors.New("scripted close failure")
+	closed := false
+	sys := &system.Fake{OpenRootHandler: func(string) (system.Root, error) {
+		return system.FakeRoot{
+			Path:         "/source/review-tools",
+			Source:       fstest.MapFS{"link": {Mode: fs.ModeSymlink}},
+			CloseHandler: func() error { closed = true; return closeErr },
+		}, nil
+	}}
+	_, err := claude.ReadManifest(sys, "requested-path")
+	require.ErrorIs(t, err, claude.ErrUnsupportedPayload)
+	require.ErrorIs(t, err, closeErr)
+	assert.True(t, closed)
+}
+
+func TestReadManifestCloseFailureRejectsResult(t *testing.T) {
+	t.Parallel()
+	closeErr := errors.New("scripted close failure")
+	sys := &system.Fake{OpenRootHandler: func(string) (system.Root, error) {
+		return system.FakeRoot{
+			Path: "/source/review-tools", Source: fstest.MapFS{},
+			CloseHandler: func() error { return closeErr },
+		}, nil
+	}}
+	manifest, err := claude.ReadManifest(sys, "requested-path")
+	require.ErrorIs(t, err, closeErr)
+	assert.Zero(t, manifest)
+}
+
+func TestReadManifestPropagatesAcquisitionFailure(t *testing.T) {
+	t.Parallel()
+	openErr := errors.New("scripted acquisition failure")
+	sys := &system.Fake{OpenRootHandler: func(string) (system.Root, error) { return nil, openErr }}
+	_, err := claude.ReadManifest(sys, "requested-path")
+	require.ErrorIs(t, err, openErr)
 }
 
 func writeManifest(t *testing.T, root, data string) {

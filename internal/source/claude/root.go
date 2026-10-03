@@ -2,25 +2,14 @@ package claude
 
 import (
 	"errors"
-	"fmt"
-	"os"
-	"path/filepath"
+
+	"github.com/leonhfr/glean/internal/system"
 )
 
-func openPluginRoot(directory string) (*os.Root, error) {
-	rootPath, err := filepath.Abs(directory)
+func openPluginRoot(sys system.RootOpener, directory string) (system.Root, error) {
+	root, err := sys.OpenRoot(directory)
 	if err != nil {
-		return nil, fmt.Errorf("resolve plugin root: %w", err)
-	}
-
-	rootPath, err = filepath.EvalSymlinks(rootPath)
-	if err != nil {
-		return nil, fmt.Errorf("resolve plugin root: %w", err)
-	}
-
-	root, err := os.OpenRoot(rootPath)
-	if err != nil {
-		return nil, fmt.Errorf("open plugin root: %w", err)
+		return nil, err
 	}
 
 	if err = validatePayload(root.FS()); err != nil {

@@ -1,4 +1,4 @@
-// Package claude reads Claude plugin sources independently of native installation.
+// Package claude reads Claude plugin sources.
 package claude
 
 import (
@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
+
+	"github.com/leonhfr/glean/internal/system"
 )
 
 // ManifestPath is relative to a native plugin's payload root.
@@ -18,9 +19,8 @@ const ManifestPath = ".claude-plugin/plugin.json"
 // ErrInvalidManifest identifies malformed metadata or an invalid plugin name.
 var ErrInvalidManifest = errors.New("invalid Claude plugin manifest")
 
-// Manifest retains source metadata and declarations for later interpretation.
-// Fields includes all authored fields, including dependencies and userConfig.
-// Retaining a field does not authorize delivering it or establish native support.
+// Manifest contains the package root, native name and authored fields.
+// Fields preserves all top-level fields as raw JSON.
 type Manifest struct {
 	Root    string
 	Name    string
@@ -30,10 +30,9 @@ type Manifest struct {
 
 // ReadManifest reads a local plugin manifest after checking the payload boundary.
 // Root becomes an absolute physical path. Without a manifest, Name defaults to
-// the directory name; future catalog resolution can supply authoritative metadata.
-// This does not discover capabilities, validate their definitions or modify files.
-func ReadManifest(directory string) (result Manifest, err error) {
-	root, err := openPluginRoot(directory)
+// the directory name.
+func ReadManifest(sys system.RootOpener, directory string) (result Manifest, err error) {
+	root, err := openPluginRoot(sys, directory)
 	if err != nil {
 		return Manifest{}, err
 	}
@@ -47,9 +46,9 @@ func ReadManifest(directory string) (result Manifest, err error) {
 	return readManifest(root)
 }
 
-func readManifest(root *os.Root) (Manifest, error) {
+func readManifest(root system.Root) (Manifest, error) {
 	rootPath := root.Name()
-	data, err := root.ReadFile(ManifestPath)
+	data, err := fs.ReadFile(root.FS(), ManifestPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		name := filepath.Base(rootPath)
 		if !validPluginName(name) {

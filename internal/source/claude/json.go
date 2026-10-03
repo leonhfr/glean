@@ -8,8 +8,7 @@ import (
 	"io"
 )
 
-// manifestFields rejects duplicate top-level keys rather than allowing the JSON
-// decoder to silently choose one. Native nested definitions are parsed separately.
+// manifestFields decodes a JSON object and rejects duplicate top-level keys.
 func manifestFields(data []byte) (map[string]json.RawMessage, error) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	token, err := decoder.Token()
