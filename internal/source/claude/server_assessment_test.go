@@ -85,7 +85,11 @@ func TestServerFieldAssessment(t *testing.T) {
 func TestServerValidShapesRemainRuntimeUnverified(t *testing.T) {
 	t.Parallel()
 	source := fstest.MapFS{
-		claude.ManifestPath: {Data: []byte(`{"name":"tools","mcpServers":{"local":{"command":"node","args":["","server.js"],"env":{"TOKEN":""}},"remote":{"type":"streamable-http","url":"https://example.test/mcp","headers":{},"headersHelper":"get-headers"}},"lspServers":{"go":{"command":"/path with spaces/gopls","extensionToLanguage":{".go":"go"},"transport":"socket","args":[],"env":{},"workspaceFolder":"","initializationOptions":{"x":[true]},"settings":{},"startupTimeout":1e3,"shutdownTimeout":1.0,"maxRestarts":0,"restartOnCrash":false,"diagnostics":true}}}`)},
+		claude.ManifestPath: {
+			Data: []byte(
+				`{"name":"tools","mcpServers":{"local":{"command":"node","args":["","server.js"],"env":{"TOKEN":""}},"remote":{"type":"streamable-http","url":"https://example.test/mcp","headers":{},"headersHelper":"get-headers"}},"lspServers":{"go":{"command":"/path with spaces/gopls","extensionToLanguage":{".go":"go"},"transport":"socket","args":[],"env":{},"workspaceFolder":"","initializationOptions":{"x":[true]},"settings":{},"startupTimeout":1e3,"shutdownTimeout":1.0,"maxRestarts":0,"restartOnCrash":false,"diagnostics":true}}}`,
+			),
+		},
 	}
 	plugin, err := claude.ReadPlugin(agentSystem(source), "requested", "resolved")
 	require.NoError(t, err)

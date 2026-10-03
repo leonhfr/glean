@@ -38,7 +38,11 @@ func TestPluginAssessmentComponentsAndMetadata(t *testing.T) {
 func TestPluginAssessmentReferencesDoNotExportValues(t *testing.T) {
 	t.Parallel()
 	source := fstest.MapFS{
-		claude.ManifestPath: {Data: []byte(`{"name":"tools","userConfig":{"token":{"type":"string","sensitive":true,"default":"do-not-export-this"}},"mcpServers":{"docs":{"command":"node","env":{"TOKEN":"${user_config.token}","OTHER":"${user_config.missing}","RAW":"do-not-export-that","DATA":"${CLAUDE_PLUGIN_DATA}"}}}}`)},
+		claude.ManifestPath: {
+			Data: []byte(
+				`{"name":"tools","userConfig":{"token":{"type":"string","sensitive":true,"default":"do-not-export-this"}},"mcpServers":{"docs":{"command":"node","env":{"TOKEN":"${user_config.token}","OTHER":"${user_config.missing}","RAW":"do-not-export-that","DATA":"${CLAUDE_PLUGIN_DATA}"}}}}`,
+			),
+		},
 	}
 	plugin, err := claude.ReadPlugin(agentSystem(source), "requested", "resolved")
 	require.NoError(t, err)
@@ -93,7 +97,13 @@ func TestPluginAssessmentDependenciesStayUnverified(t *testing.T) {
 
 func TestPluginAssessmentHookCompanions(t *testing.T) {
 	t.Parallel()
-	source := fstest.MapFS{claude.ManifestPath: {Data: []byte(`{"name":"tools","mcpServers":{"db":{"command":"node"}},"hooks":{"PostToolUse":[{"hooks":[{"type":"mcp_tool","server":"plugin:tools:db","tool":"check"},{"type":"mcp_tool","server":"plugin:tools:absent","tool":"check"},{"type":"mcp_tool","server":"external","tool":"check"},{"type":"future_handler"}]}]}}`)}}
+	source := fstest.MapFS{
+		claude.ManifestPath: {
+			Data: []byte(
+				`{"name":"tools","mcpServers":{"db":{"command":"node"}},"hooks":{"PostToolUse":[{"hooks":[{"type":"mcp_tool","server":"plugin:tools:db","tool":"check"},{"type":"mcp_tool","server":"plugin:tools:absent","tool":"check"},{"type":"mcp_tool","server":"external","tool":"check"},{"type":"future_handler"}]}]}}`,
+			),
+		},
+	}
 	plugin, err := claude.ReadPlugin(agentSystem(source), "requested", "resolved")
 	require.NoError(t, err)
 	statuses := map[string]model.FindingStatus{}

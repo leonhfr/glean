@@ -19,7 +19,11 @@ func TestReadHooksCombinesSourcesInOrder(t *testing.T) {
 	t.Parallel()
 	source := fstest.MapFS{
 		claude.ManifestPath: {Data: []byte(`{"name":"tools","hooks":["./custom/hooks.json",{"PostToolUse":[{"matcher":"Write|Edit","hooks":[{"type":"http","url":"https://example.test","headers":{"Authorization":"Bearer $TOKEN"},"allowedEnvVars":["TOKEN"]}]}]}]}`)},
-		"hooks/hooks.json":  {Data: []byte(`{"description":"Native hook file","hooks":{"PostToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"${CLAUDE_PLUGIN_ROOT}/scripts/check.sh","async":true,"timeout":42},{"type":"prompt","prompt":"Check $ARGUMENTS","model":"sonnet"}]}],"Stop":[{"hooks":[{"type":"agent","prompt":"Review"}]}]}}`)},
+		"hooks/hooks.json": {
+			Data: []byte(
+				`{"description":"Native hook file","hooks":{"PostToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"${CLAUDE_PLUGIN_ROOT}/scripts/check.sh","async":true,"timeout":42},{"type":"prompt","prompt":"Check $ARGUMENTS","model":"sonnet"}]}],"Stop":[{"hooks":[{"type":"agent","prompt":"Review"}]}]}}`,
+			),
+		},
 		"custom/hooks.json": {Data: []byte(`{"hooks":{"PostToolUse":[{"hooks":[{"type":"mcp_tool","server":"plugin:tools:db","tool":"check","input":{"file":"${tool_input.file_path}"}}]}]}}`)},
 		"scripts/check.sh":  {Data: []byte("exit 99")},
 	}

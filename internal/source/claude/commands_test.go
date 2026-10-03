@@ -72,7 +72,11 @@ func TestReadCommandsRepeatedFilesDeduplicate(t *testing.T) {
 func TestReadCommandsNamedFileAndInline(t *testing.T) {
 	t.Parallel()
 	source := fstest.MapFS{
-		claude.ManifestPath:   {Data: []byte(`{"name":"tools","commands":{"status":{"source":"./custom/actual.md","description":"Override","argumentHint":"[env]","model":"sonnet","allowedTools":["Read"],"futureOption":true},"a~/b":{"content":"---\ndescription: Inline description\n---\nBody $ARGUMENTS","allowedTools":[]}}}`)},
+		claude.ManifestPath: {
+			Data: []byte(
+				`{"name":"tools","commands":{"status":{"source":"./custom/actual.md","description":"Override","argumentHint":"[env]","model":"sonnet","allowedTools":["Read"],"futureOption":true},"a~/b":{"content":"---\ndescription: Inline description\n---\nBody $ARGUMENTS","allowedTools":[]}}}`,
+			),
+		},
 		"custom/actual.md":    {Data: []byte("---\ndescription: Authored\n---\nBody")},
 		"commands/ignored.md": {Data: []byte("ignored")},
 	}

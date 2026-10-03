@@ -80,7 +80,13 @@ func TestHookFieldAssessment(t *testing.T) {
 
 func TestHookValidShapesRemainUnverified(t *testing.T) {
 	t.Parallel()
-	source := fstest.MapFS{claude.ManifestPath: {Data: []byte(`{"name":"tools","userConfig":{"token":{"type":"string"}},"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"node","args":["${user_config.token}"],"async":false,"asyncRewake":true,"shell":"powershell","timeout":0.5,"if":"Bash(git *)","once":false,"statusMessage":""},{"type":"prompt","prompt":"Check","model":"sonnet"},{"type":"agent","prompt":"Check"},{"type":"http","url":"http://localhost:8080","headers":{"Authorization":"Bearer $TOKEN"},"allowedEnvVars":["TOKEN"]},{"type":"mcp_tool","server":"external","tool":"check","input":{"file":"${tool_input.file_path}"}}]}]}}`)}}
+	source := fstest.MapFS{
+		claude.ManifestPath: {
+			Data: []byte(
+				`{"name":"tools","userConfig":{"token":{"type":"string"}},"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"node","args":["${user_config.token}"],"async":false,"asyncRewake":true,"shell":"powershell","timeout":0.5,"if":"Bash(git *)","once":false,"statusMessage":""},{"type":"prompt","prompt":"Check","model":"sonnet"},{"type":"agent","prompt":"Check"},{"type":"http","url":"http://localhost:8080","headers":{"Authorization":"Bearer $TOKEN"},"allowedEnvVars":["TOKEN"]},{"type":"mcp_tool","server":"external","tool":"check","input":{"file":"${tool_input.file_path}"}}]}]}}`,
+			),
+		},
+	}
 	plugin, err := claude.ReadPlugin(agentSystem(source), "requested", "resolved")
 	require.NoError(t, err)
 	count := 0

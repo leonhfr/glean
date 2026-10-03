@@ -19,8 +19,12 @@ func TestReadLSPCombinesDefaultFileAndInline(t *testing.T) {
 	t.Parallel()
 	source := fstest.MapFS{
 		claude.ManifestPath: {Data: []byte(`{"name":"tools","lspServers":["./extra.json",{"ts":{"command":"typescript-language-server","args":["--stdio"],"extensionToLanguage":{".ts":"typescript"},"transport":"socket"}}]}`)},
-		".lsp.json":         {Data: []byte(`{"go":{"command":"${CLAUDE_PLUGIN_ROOT}/bin/gopls","args":["serve"],"extensionToLanguage":{".go":"go"},"env":{"DATA":"${CLAUDE_PLUGIN_DATA}"},"workspaceFolder":"${CLAUDE_PROJECT_DIR}","initializationOptions":{"features":["navigation"]},"settings":{"gopls":{"analyses":{"unusedparams":true}}},"startupTimeout":1000,"shutdownTimeout":2000,"requestTimeout":3000,"restartOnCrash":false,"maxRestarts":2,"diagnostics":true}}`)},
-		"extra.json":        {Data: []byte(`{"python":{"command":"pyright-langserver","extensionToLanguage":{".py":"python"},"args":["--stdio"]}}`)},
+		".lsp.json": {
+			Data: []byte(
+				`{"go":{"command":"${CLAUDE_PLUGIN_ROOT}/bin/gopls","args":["serve"],"extensionToLanguage":{".go":"go"},"env":{"DATA":"${CLAUDE_PLUGIN_DATA}"},"workspaceFolder":"${CLAUDE_PROJECT_DIR}","initializationOptions":{"features":["navigation"]},"settings":{"gopls":{"analyses":{"unusedparams":true}}},"startupTimeout":1000,"shutdownTimeout":2000,"requestTimeout":3000,"restartOnCrash":false,"maxRestarts":2,"diagnostics":true}}`,
+			),
+		},
+		"extra.json": {Data: []byte(`{"python":{"command":"pyright-langserver","extensionToLanguage":{".py":"python"},"args":["--stdio"]}}`)},
 	}
 	inventory, err := claude.ReadLSP(agentSystem(source), "requested", "package")
 	require.NoError(t, err)

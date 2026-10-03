@@ -60,9 +60,12 @@ formatters:
   enable:
     - gci
     - gofumpt
+    - golines
   settings:
     gci:
       sections:
         - standard
         - default
         - localmodule
+    golines:
+      max-len: 300

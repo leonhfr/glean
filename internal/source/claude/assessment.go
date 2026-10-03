@@ -58,7 +58,33 @@ func assessPlugin(source fs.FS, plugin PluginInventory) ([]model.Finding, error)
 }
 
 func assessComponents(source fs.FS, manifest Manifest) ([]model.Finding, error) {
-	metadata := map[string]bool{"$schema": true, "name": true, "displayName": true, "version": true, "description": true, "author": true, "homepage": true, "repository": true, "license": true, "keywords": true, "metadata": true, "icon": true, "documentationUrl": true, "supportUrl": true, "privacyPolicyUrl": true, "termsOfServiceUrl": true, "defaultEnabled": true, "dependencies": true, "userConfig": true, "skills": true, "agents": true, "commands": true, "hooks": true, "mcpServers": true, "lspServers": true}
+	metadata := map[string]bool{
+		"$schema":           true,
+		"name":              true,
+		"displayName":       true,
+		"version":           true,
+		"description":       true,
+		"author":            true,
+		"homepage":          true,
+		"repository":        true,
+		"license":           true,
+		"keywords":          true,
+		"metadata":          true,
+		"icon":              true,
+		"documentationUrl":  true,
+		"supportUrl":        true,
+		"privacyPolicyUrl":  true,
+		"termsOfServiceUrl": true,
+		"defaultEnabled":    true,
+		"dependencies":      true,
+		"userConfig":        true,
+		"skills":            true,
+		"agents":            true,
+		"commands":          true,
+		"hooks":             true,
+		"mcpServers":        true,
+		"lspServers":        true,
+	}
 	deferred := map[string]bool{"outputStyles": true, "workflows": true, "settings": true, "channels": true, "types": true, "monitors": true}
 	var findings []model.Finding
 	for _, field := range slices.Sorted(maps.Keys(manifest.Fields)) {
@@ -182,7 +208,10 @@ func assessDependencies(manifest Manifest) []model.Finding {
 			name = ""
 		}
 
-		findings = append(findings, model.Finding{Code: "PLUGIN_DEPENDENCY", Status: status, Reference: name, Message: "Resolve the declared companion explicitly; inventory does not prove installation or compatibility.", Locations: []model.Location{{Path: ManifestPath, Pointer: fmt.Sprintf("/dependencies/%d", i)}}})
+		findings = append(
+			findings,
+			model.Finding{Code: "PLUGIN_DEPENDENCY", Status: status, Reference: name, Message: "Resolve the declared companion explicitly; inventory does not prove installation or compatibility.", Locations: []model.Location{{Path: ManifestPath, Pointer: fmt.Sprintf("/dependencies/%d", i)}}},
+		)
 	}
 
 	return findings
