@@ -1,0 +1,65 @@
+{
+  "agents": [
+    "./agents/reviewer.md"
+  ],
+  "author": {
+    "name": "Example"
+  },
+  "commands": {
+    "about": {
+      "content": "Describe this plugin."
+    }
+  },
+  "customMetadata": {
+    "label": "preserved for assessment"
+  },
+  "dependencies": [
+    "shared-tools@examples"
+  ],
+  "description": "Review helpers",
+  "hooks": [
+    "./config/hooks.json",
+    {
+      "PostToolUse": [
+        {
+          "hooks": [
+            {
+              "command": "${CLAUDE_PLUGIN_ROOT}/scripts/check.sh",
+              "type": "command"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "lspServers": {
+    "go": {
+      "command": "gopls",
+      "extensionToLanguage": {
+        ".go": "go"
+      }
+    }
+  },
+  "mcpServers": {
+    "docs.api": {
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/server.js"
+      ],
+      "command": "node"
+    }
+  },
+  "name": "review-tools",
+  "outputStyles": "./styles/",
+  "skills": [
+    "./skills/",
+    "./extra-skills/"
+  ],
+  "userConfig": {
+    "token": {
+      "sensitive": true,
+      "title": "Token",
+      "type": "string"
+    }
+  },
+  "version": "1.2.3"
+}
