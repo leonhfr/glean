@@ -78,12 +78,14 @@ func hookContributions(source fs.FS, manifest Manifest) ([]hookContribution, err
 		return contributions, nil
 	}
 
-	values := []json.RawMessage{raw}
+	var values []json.RawMessage
 	array := len(raw) > 0 && raw[0] == '['
 	if array {
 		if err := json.Unmarshal(raw, &values); err != nil {
 			return nil, fmt.Errorf("%w: invalid hooks array", ErrInvalidHooks)
 		}
+	} else {
+		values = []json.RawMessage{raw}
 	}
 
 	for i, value := range values {

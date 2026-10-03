@@ -226,19 +226,7 @@ func assessNativeCapability(capability model.Capability, plugin PluginInventory)
 		findings = append(findings, capabilityFinding(capability, "NATIVE_SERVER_SUPPORT", model.FindingUnknown, "transport", "Native option validity, language conflicts and version support require assessment."))
 
 	case native.Hook:
-		for _, group := range definition.Groups {
-			for _, handler := range group.Handlers {
-				status := model.FindingUnknown
-				if !slices.Contains([]native.HookHandlerType{native.HookCommand, native.HookPrompt, native.HookAgent, native.HookHTTP, native.HookMCPTool}, handler.Type) {
-					status = model.FindingUnsupported
-				}
-
-				findings = append(findings, capabilityFinding(capability, "NATIVE_HOOK_SUPPORT", status, hookTypeReference(handler.Type), "Verify event-to-handler validity, fields and tested-version availability."))
-				if handler.Type == native.HookMCPTool {
-					findings = append(findings, assessHookServer(capability, handler, plugin))
-				}
-			}
-		}
+		findings = append(findings, assessHookDefinition(capability, definition, plugin)...)
 	}
 
 	return findings
