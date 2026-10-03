@@ -46,6 +46,12 @@ func assessPlugin(source fs.FS, plugin PluginInventory) ([]model.Finding, error)
 		}
 
 		findings = append(findings, local...)
+		references, err := assessReferences(source, capability)
+		if err != nil {
+			return nil, err
+		}
+
+		findings = append(findings, references...)
 	}
 
 	return findings, nil
