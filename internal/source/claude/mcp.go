@@ -30,7 +30,7 @@ type mcpContribution struct {
 // ReadMCP inventories native MCP structure under the supplied package ID.
 // Runtime availability and server requirements need separate assessment.
 func ReadMCP(sys system.RootOpener, directory string, packageID model.PackageID) (model.Inventory, error) {
-	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidMCP, readMCP)
+	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidMCP, readMCP, nil)
 	return plugin.Inventory, err
 }
 

@@ -19,7 +19,7 @@ var ErrInvalidAgents = errors.New("invalid Claude agent source")
 
 // ReadAgents inventories a local plugin's agents under the supplied package ID.
 func ReadAgents(sys system.RootOpener, directory string, packageID model.PackageID) (model.Inventory, error) {
-	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidAgents, readAgents)
+	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidAgents, readAgents, nil)
 	return plugin.Inventory, err
 }
 

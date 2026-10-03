@@ -21,17 +21,20 @@ var ErrInvalidPlugin = errors.New("invalid Claude plugin source")
 type PluginInventory struct {
 	Manifest  Manifest
 	Inventory model.Inventory
+	Findings  []model.Finding
 }
+
+type pluginAssessor func(fs.FS, PluginInventory) ([]model.Finding, error)
 
 type capabilityReader func(fs.FS, Manifest, model.PackageID) ([]model.Capability, error)
 
 // ReadPlugin inventories all six kinds using one checked root and manifest read.
 // Any component or close failure discards the complete result.
 func ReadPlugin(sys system.RootOpener, directory string, packageID model.PackageID) (PluginInventory, error) {
-	return readPluginInventory(sys, directory, packageID, ErrInvalidPlugin, readPluginCapabilities)
+	return readPluginInventory(sys, directory, packageID, ErrInvalidPlugin, readPluginCapabilities, assessPlugin)
 }
 
-func readPluginInventory(sys system.RootOpener, directory string, packageID model.PackageID, invalidErr error, reader capabilityReader) (result PluginInventory, err error) {
+func readPluginInventory(sys system.RootOpener, directory string, packageID model.PackageID, invalidErr error, reader capabilityReader, assessor pluginAssessor) (result PluginInventory, err error) {
 	if strings.TrimSpace(string(packageID)) == "" {
 		return PluginInventory{}, fmt.Errorf("%w: require resolved package identity", invalidErr)
 	}
@@ -52,14 +55,23 @@ func readPluginInventory(sys system.RootOpener, directory string, packageID mode
 		return PluginInventory{}, err
 	}
 
-	capabilities, err := reader(root.FS(), manifest, packageID)
+	source := &cachedSource{source: root.FS(), files: make(map[string][]byte)}
+	capabilities, err := reader(source, manifest, packageID)
 	if err != nil {
 		return PluginInventory{}, err
 	}
 
-	return PluginInventory{Manifest: manifest, Inventory: model.Inventory{
+	result = PluginInventory{Manifest: manifest, Inventory: model.Inventory{
 		Package: model.Package{ID: packageID, Name: manifest.Name, Root: manifest.Root}, Capabilities: capabilities,
-	}}, nil
+	}}
+	if assessor != nil {
+		result.Findings, err = assessor(source, result)
+		if err != nil {
+			return PluginInventory{}, err
+		}
+	}
+
+	return result, nil
 }
 
 func readPluginCapabilities(source fs.FS, manifest Manifest, packageID model.PackageID) ([]model.Capability, error) {

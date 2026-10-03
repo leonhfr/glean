@@ -27,7 +27,7 @@ type lspContribution struct {
 // ReadLSP inventories native LSP structure under the supplied package ID.
 // Runtime availability and server requirements need separate assessment.
 func ReadLSP(sys system.RootOpener, directory string, packageID model.PackageID) (model.Inventory, error) {
-	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidLSP, readLSP)
+	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidLSP, readLSP, nil)
 	return plugin.Inventory, err
 }
 

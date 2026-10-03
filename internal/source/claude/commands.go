@@ -27,7 +27,7 @@ type commandFile struct {
 
 // ReadCommands inventories a local plugin's commands under the supplied package ID.
 func ReadCommands(sys system.RootOpener, directory string, packageID model.PackageID) (model.Inventory, error) {
-	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidCommands, readCommands)
+	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidCommands, readCommands, nil)
 	return plugin.Inventory, err
 }
 

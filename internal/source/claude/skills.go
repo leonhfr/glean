@@ -19,7 +19,7 @@ var ErrInvalidSkills = errors.New("invalid Claude skill source")
 
 // ReadSkills inventories a local plugin's skills under the supplied package ID.
 func ReadSkills(sys system.RootOpener, directory string, packageID model.PackageID) (model.Inventory, error) {
-	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidSkills, readSkills)
+	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidSkills, readSkills, nil)
 	return plugin.Inventory, err
 }
 

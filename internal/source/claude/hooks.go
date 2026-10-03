@@ -19,6 +19,7 @@ var ErrInvalidHooks = errors.New("invalid Claude hook source")
 
 type hookContribution struct {
 	events      json.RawMessage
+	fields      map[string]json.RawMessage
 	location    model.Location
 	declaration model.Location
 }
@@ -26,7 +27,7 @@ type hookContribution struct {
 // ReadHooks inventories native hook structure under the supplied package ID.
 // Runtime availability and handler requirements need separate assessment.
 func ReadHooks(sys system.RootOpener, directory string, packageID model.PackageID) (model.Inventory, error) {
-	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidHooks, readHooks)
+	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidHooks, readHooks, nil)
 	return plugin.Inventory, err
 }
 
@@ -150,7 +151,7 @@ func readHookFile(source fs.FS, filename string, declaration model.Location) (ho
 	}
 
 	// Extra top-level components are assessed by complete plugin inventory later.
-	return hookContribution{events: events, location: model.Location{Path: filename, Pointer: "/hooks"}, declaration: declaration}, nil
+	return hookContribution{events: events, fields: fields, location: model.Location{Path: filename, Pointer: "/hooks"}, declaration: declaration}, nil
 }
 
 func includeHookEvent(events map[string]model.Capability, event string, raw json.RawMessage, contribution hookContribution, manifest Manifest, packageID model.PackageID) error {
