@@ -1,4 +1,5 @@
 [tools]
+actionlint = "1.7.12"
 gitleaks = "8.30.1"
 go = "1.27.1"
 golangci-lint = "2.14.0"
@@ -11,12 +12,20 @@ typos = "1.50.3"
 yamlfmt = "0.21.0"
 yamllint = "1.38.0"
 
+[tasks.golangci-build]
+description = "Build the project linter with module plugins"
+sources = [".custom-gcl.yml", "mise.toml"]
+outputs = ["bin/glean-golangci-lint"]
+run = "golangci-lint custom"
+
 [tasks.check]
 description = "Verify formatting, lint, config, module tidiness and applicable tests without changing source files"
+depends = ["golangci-build"]
 run = "hk check --all --check --no-stage"
 
 [tasks.fix]
 description = "Apply formatting and available lint/module fixes, then run remaining checks; do not stage files"
+depends = ["golangci-build"]
 run = "hk fix --all --fix --no-stage"
 
 [tasks.test]

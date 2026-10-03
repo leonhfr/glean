@@ -1,0 +1,8 @@
+version: v2.14.0
+name: glean-golangci-lint
+destination: ./bin
+plugins:
+  - module: github.com/leonhfr/newline-after-block
+    version: v0.1.2
+  - module: github.com/swchck/commentlen
+    version: v0.2.0

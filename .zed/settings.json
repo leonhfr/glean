@@ -1,0 +1,16 @@
+{
+  "lsp": {
+    "golangci-lint": {
+      "initialization_options": {
+        "command": [
+          "./bin/glean-golangci-lint",
+          "run",
+          "--output.json.path",
+          "stdout",
+          "--show-stats=false",
+          "--output.text.path="
+        ]
+      }
+    }
+  }
+}

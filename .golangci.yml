@@ -3,6 +3,7 @@ version: "2"
 linters:
   default: standard
   enable:
+    - commentlen
     - errcheck
     - errorlint
     - exhaustive
@@ -17,6 +18,7 @@ linters:
     - ineffassign
     - misspell
     - modernize
+    - newline-after-block
     - nilerr
     - nilnesserr
     - nilnil
@@ -35,6 +37,15 @@ linters:
     - usetesting
     - whitespace
   settings:
+    custom:
+      commentlen:
+        type: module
+        description: size and shape limits for Go comments
+        settings:
+          preset: strict
+      newline-after-block:
+        type: module
+        description: enforces blank lines after block statements
     funcorder:
       function: true
     gocyclo:

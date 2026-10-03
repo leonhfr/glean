@@ -2,12 +2,26 @@ amends "package://github.com/jdx/hk/releases/download/v2.3.1/hk@2.3.1#/Config.pk
 import "package://github.com/jdx/hk/releases/download/v2.3.1/hk@2.3.1#/Builtins.pkl"
 
 local checks = new Mapping<String, Step> {
+    ["actionlint"] = Builtins.actionlint
     ["gitleaks"] = Builtins.gitleaks
-    ["golangci-fmt"] = Builtins.golangci_lint_fmt
-    ["golangci-lint"] = Builtins.golangci_lint
+    ["golangci-build"] = {
+        check = "mise run golangci-build"
+    }
     ["golangci-config"] = {
-        glob = List(".golangci.yml", "hk.pkl", "mise.toml")
-        check = "golangci-lint config verify"
+        glob = List(".golangci.yml", ".custom-gcl.yml", "hk.pkl", "mise.toml")
+        depends = List("golangci-build")
+        check = "bin/glean-golangci-lint config verify"
+    }
+    ["golangci-fmt"] = (Builtins.golangci_lint_fmt) {
+        depends = List("golangci-build")
+        check_diff = "bin/glean-golangci-lint fmt --diff {{files}}"
+        fix = "bin/glean-golangci-lint fmt {{files}}"
+    }
+    ["golangci-lint"] = (Builtins.golangci_lint) {
+        glob = List("**/*.go", "go.mod", "go.sum", ".golangci.yml", ".custom-gcl.yml", "hk.pkl", "mise.toml")
+        depends = List("golangci-build", "golangci-fmt", "gomod-tidy")
+        check = "bin/glean-golangci-lint run --fix=false ./..."
+        fix = "bin/glean-golangci-lint run --fix ./..."
     }
     ["gomod-tidy"] = Builtins.gomod_tidy
     ["json-fmt"] = Builtins.jq
