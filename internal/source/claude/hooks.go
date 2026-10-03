@@ -25,36 +25,9 @@ type hookContribution struct {
 
 // ReadHooks inventories native hook structure under the supplied package ID.
 // Runtime availability and handler requirements need separate assessment.
-func ReadHooks(sys system.RootOpener, directory string, packageID model.PackageID) (result model.Inventory, err error) {
-	if strings.TrimSpace(string(packageID)) == "" {
-		return model.Inventory{}, fmt.Errorf("%w: require resolved package identity", ErrInvalidHooks)
-	}
-
-	root, err := openPluginRoot(sys, directory)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-	defer func() {
-		if closeErr := root.Close(); closeErr != nil {
-			result = model.Inventory{}
-			err = errors.Join(err, fmt.Errorf("close plugin root: %w", closeErr))
-		}
-	}()
-
-	manifest, err := readManifest(root)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-
-	capabilities, err := readHooks(root.FS(), manifest, packageID)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-
-	return model.Inventory{
-		Package:      model.Package{ID: packageID, Name: manifest.Name, Root: manifest.Root},
-		Capabilities: capabilities,
-	}, nil
+func ReadHooks(sys system.RootOpener, directory string, packageID model.PackageID) (model.Inventory, error) {
+	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidHooks, readHooks)
+	return plugin.Inventory, err
 }
 
 func readHooks(source fs.FS, manifest Manifest, packageID model.PackageID) ([]model.Capability, error) {

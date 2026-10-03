@@ -18,36 +18,9 @@ import (
 var ErrInvalidAgents = errors.New("invalid Claude agent source")
 
 // ReadAgents inventories a local plugin's agents under the supplied package ID.
-func ReadAgents(sys system.RootOpener, directory string, packageID model.PackageID) (result model.Inventory, err error) {
-	if strings.TrimSpace(string(packageID)) == "" {
-		return model.Inventory{}, fmt.Errorf("%w: require resolved package identity", ErrInvalidAgents)
-	}
-
-	root, err := openPluginRoot(sys, directory)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-	defer func() {
-		if closeErr := root.Close(); closeErr != nil {
-			result = model.Inventory{}
-			err = errors.Join(err, fmt.Errorf("close plugin root: %w", closeErr))
-		}
-	}()
-
-	manifest, err := readManifest(root)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-
-	capabilities, err := readAgents(root.FS(), manifest, packageID)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-
-	return model.Inventory{
-		Package:      model.Package{ID: packageID, Name: manifest.Name, Root: manifest.Root},
-		Capabilities: capabilities,
-	}, nil
+func ReadAgents(sys system.RootOpener, directory string, packageID model.PackageID) (model.Inventory, error) {
+	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidAgents, readAgents)
+	return plugin.Inventory, err
 }
 
 func readAgents(source fs.FS, manifest Manifest, packageID model.PackageID) ([]model.Capability, error) {

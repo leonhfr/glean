@@ -26,36 +26,9 @@ type commandFile struct {
 }
 
 // ReadCommands inventories a local plugin's commands under the supplied package ID.
-func ReadCommands(sys system.RootOpener, directory string, packageID model.PackageID) (result model.Inventory, err error) {
-	if strings.TrimSpace(string(packageID)) == "" {
-		return model.Inventory{}, fmt.Errorf("%w: require resolved package identity", ErrInvalidCommands)
-	}
-
-	root, err := openPluginRoot(sys, directory)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-	defer func() {
-		if closeErr := root.Close(); closeErr != nil {
-			result = model.Inventory{}
-			err = errors.Join(err, fmt.Errorf("close plugin root: %w", closeErr))
-		}
-	}()
-
-	manifest, err := readManifest(root)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-
-	capabilities, err := readCommands(root.FS(), manifest, packageID)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-
-	return model.Inventory{
-		Package:      model.Package{ID: packageID, Name: manifest.Name, Root: manifest.Root},
-		Capabilities: capabilities,
-	}, nil
+func ReadCommands(sys system.RootOpener, directory string, packageID model.PackageID) (model.Inventory, error) {
+	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidCommands, readCommands)
+	return plugin.Inventory, err
 }
 
 func readCommands(source fs.FS, manifest Manifest, packageID model.PackageID) ([]model.Capability, error) {

@@ -26,36 +26,9 @@ type lspContribution struct {
 
 // ReadLSP inventories native LSP structure under the supplied package ID.
 // Runtime availability and server requirements need separate assessment.
-func ReadLSP(sys system.RootOpener, directory string, packageID model.PackageID) (result model.Inventory, err error) {
-	if strings.TrimSpace(string(packageID)) == "" {
-		return model.Inventory{}, fmt.Errorf("%w: require resolved package identity", ErrInvalidLSP)
-	}
-
-	root, err := openPluginRoot(sys, directory)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-	defer func() {
-		if closeErr := root.Close(); closeErr != nil {
-			result = model.Inventory{}
-			err = errors.Join(err, fmt.Errorf("close plugin root: %w", closeErr))
-		}
-	}()
-
-	manifest, err := readManifest(root)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-
-	capabilities, err := readLSP(root.FS(), manifest, packageID)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-
-	return model.Inventory{
-		Package:      model.Package{ID: packageID, Name: manifest.Name, Root: manifest.Root},
-		Capabilities: capabilities,
-	}, nil
+func ReadLSP(sys system.RootOpener, directory string, packageID model.PackageID) (model.Inventory, error) {
+	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidLSP, readLSP)
+	return plugin.Inventory, err
 }
 
 func readLSP(source fs.FS, manifest Manifest, packageID model.PackageID) ([]model.Capability, error) {

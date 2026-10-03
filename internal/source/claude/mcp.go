@@ -29,36 +29,9 @@ type mcpContribution struct {
 
 // ReadMCP inventories native MCP structure under the supplied package ID.
 // Runtime availability and server requirements need separate assessment.
-func ReadMCP(sys system.RootOpener, directory string, packageID model.PackageID) (result model.Inventory, err error) {
-	if strings.TrimSpace(string(packageID)) == "" {
-		return model.Inventory{}, fmt.Errorf("%w: require resolved package identity", ErrInvalidMCP)
-	}
-
-	root, err := openPluginRoot(sys, directory)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-	defer func() {
-		if closeErr := root.Close(); closeErr != nil {
-			result = model.Inventory{}
-			err = errors.Join(err, fmt.Errorf("close plugin root: %w", closeErr))
-		}
-	}()
-
-	manifest, err := readManifest(root)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-
-	capabilities, err := readMCP(root.FS(), manifest, packageID)
-	if err != nil {
-		return model.Inventory{}, err
-	}
-
-	return model.Inventory{
-		Package:      model.Package{ID: packageID, Name: manifest.Name, Root: manifest.Root},
-		Capabilities: capabilities,
-	}, nil
+func ReadMCP(sys system.RootOpener, directory string, packageID model.PackageID) (model.Inventory, error) {
+	plugin, err := readPluginInventory(sys, directory, packageID, ErrInvalidMCP, readMCP)
+	return plugin.Inventory, err
 }
 
 func readMCP(source fs.FS, manifest Manifest, packageID model.PackageID) ([]model.Capability, error) {
